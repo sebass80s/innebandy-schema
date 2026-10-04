@@ -177,11 +177,21 @@ function buildCoachSchedule(
     if (!valid) continue;
 
     let score = 0;
+    let hasForbiddenCoachStreak = false;
     for (const coach of coaches) {
       const pattern = schedule.map((ids) => ids.includes(coach.id));
-      score += Math.pow(Math.max(0, longestRun(pattern, true) - 2), 2) * 1200;
+      const playRun = longestRun(pattern, true);
+
+      if (coaches.length > 2 && playRun > 2) {
+        hasForbiddenCoachStreak = true;
+        break;
+      }
+
+      score += Math.pow(Math.max(0, playRun - 2), 2) * 1200;
       score += Math.pow(Math.max(0, longestRun(pattern, false) - 2), 2) * 10;
     }
+
+    if (hasForbiddenCoachStreak) continue;
 
     const homeCounts = new Map(coaches.map((coach) => [coach.id, 0]));
     for (let index = 0; index < schedule.length; index += 1) {
