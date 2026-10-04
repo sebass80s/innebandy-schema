@@ -219,6 +219,11 @@ function buildCoachSchedule(
       pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
     }
 
+    if (coaches.length === 4 && matchCount === 9) {
+      if (pairCounts.size < 6) continue;
+      if ([...pairCounts.values()].some((count) => count > 2)) continue;
+    }
+
     for (const count of pairCounts.values()) {
       if (count > 1) {
         score += Math.pow(count - 1, 2) * 400;
