@@ -192,7 +192,7 @@ export default function Home() {
     <main className="shell">
       <header className="hero">
         <div className="eyebrow">Innebandy · rotationsschema</div>
-        <h1>Alla ska få spela.</h1>
+        <h1>Roterande schema</h1>
         <p>
           Skapa ett så jämnt säsongsschema som möjligt. Två tränare följer med
           varje match och deras barn får automatiskt en plats.
