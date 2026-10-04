@@ -19,21 +19,21 @@ type Scenario = {
   playerCount: number;
   coachCount: number;
   matchCount: number;
-  homeMatchCount: number;
+  homePattern: boolean[];
   playersPerMatch: number;
   runs: number;
 };
 
 const scenarios: Scenario[] = [
-  { name: "standard", playerCount: 18, coachCount: 4, matchCount: 9, homeMatchCount: 4, playersPerMatch: 8, runs: 60 },
-  { name: "12p-3c", playerCount: 12, coachCount: 3, matchCount: 6, homeMatchCount: 3, playersPerMatch: 7, runs: 25 },
-  { name: "14p-4c", playerCount: 14, coachCount: 4, matchCount: 8, homeMatchCount: 4, playersPerMatch: 8, runs: 25 },
-  { name: "16p-5c", playerCount: 16, coachCount: 5, matchCount: 10, homeMatchCount: 5, playersPerMatch: 9, runs: 25 },
-  { name: "18p-5c", playerCount: 18, coachCount: 5, matchCount: 9, homeMatchCount: 4, playersPerMatch: 9, runs: 25 },
-  { name: "20p-4c", playerCount: 20, coachCount: 4, matchCount: 10, homeMatchCount: 5, playersPerMatch: 10, runs: 25 },
-  { name: "20p-6c", playerCount: 20, coachCount: 6, matchCount: 12, homeMatchCount: 6, playersPerMatch: 10, runs: 25 },
-  { name: "22p-5c", playerCount: 22, coachCount: 5, matchCount: 11, homeMatchCount: 5, playersPerMatch: 10, runs: 25 },
-  { name: "24p-6c", playerCount: 24, coachCount: 6, matchCount: 12, homeMatchCount: 6, playersPerMatch: 12, runs: 25 },
+  { name: "standard", playerCount: 18, coachCount: 4, matchCount: 9, homePattern: [true, false, true, false, true, false, true, false, false], playersPerMatch: 8, runs: 60 },
+  { name: "12p-3c", playerCount: 12, coachCount: 3, matchCount: 6, homePattern: [true, false, false, true, false, true], playersPerMatch: 7, runs: 25 },
+  { name: "14p-4c", playerCount: 14, coachCount: 4, matchCount: 8, homePattern: [false, true, false, true, true, false, true, false], playersPerMatch: 8, runs: 25 },
+  { name: "16p-5c", playerCount: 16, coachCount: 5, matchCount: 10, homePattern: [true, true, false, false, true, false, true, false, true, false], playersPerMatch: 9, runs: 25 },
+  { name: "18p-5c", playerCount: 18, coachCount: 5, matchCount: 9, homePattern: [false, true, false, true, false, false, true, false, true], playersPerMatch: 9, runs: 25 },
+  { name: "20p-4c", playerCount: 20, coachCount: 4, matchCount: 10, homePattern: [true, false, true, false, true, false, false, true, false, true], playersPerMatch: 10, runs: 25 },
+  { name: "20p-6c", playerCount: 20, coachCount: 6, matchCount: 12, homePattern: [true, false, false, true, true, false, true, false, false, true, false, true], playersPerMatch: 10, runs: 25 },
+  { name: "22p-5c", playerCount: 22, coachCount: 5, matchCount: 11, homePattern: [false, true, false, true, false, true, false, true, false, true, false], playersPerMatch: 10, runs: 25 },
+  { name: "24p-6c", playerCount: 24, coachCount: 6, matchCount: 12, homePattern: [true, true, false, false, true, false, true, false, true, false, false, true], playersPerMatch: 12, runs: 25 },
 ];
 
 let totalRuns = 0;
@@ -57,7 +57,7 @@ for (const scenario of scenarios) {
       players,
       coaches,
       matchCount: scenario.matchCount,
-      homeMatchCount: scenario.homeMatchCount,
+      homePattern: scenario.homePattern,
       playersPerMatch: scenario.playersPerMatch,
       attempts: scenario.name === "standard" ? 250 : 140,
     });
@@ -68,10 +68,11 @@ for (const scenario of scenarios) {
     );
 
     const expectedSlots = scenario.matchCount * scenario.playersPerMatch;
-    const homeMatches = result.matches.filter((match) => match.isHome);
     assert(
-      homeMatches.length === scenario.homeMatchCount,
-      `${scenario.name} run ${run}: fel antal hemmamatcher`,
+      result.matches.every(
+        (match, index) => match.isHome === scenario.homePattern[index],
+      ),
+      `${scenario.name} run ${run}: hemma/borta-ordningen ändrades`,
     );
     const totalSlots = result.matches.reduce(
       (sum, match) => sum + match.playerIds.length,
