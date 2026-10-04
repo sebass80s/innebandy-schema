@@ -11,6 +11,7 @@ export type Coach = {
 
 export type ScheduledMatch = {
   number: number;
+  isHome: boolean;
   coachIds: string[];
   playerIds: string[];
 };
@@ -18,6 +19,9 @@ export type ScheduledMatch = {
 export type ScheduleResult = {
   matches: ScheduledMatch[];
   appearances: Record<string, number>;
+  homeAppearances: Record<string, number>;
+  coachAppearances: Record<string, number>;
+  coachHomeAppearances: Record<string, number>;
   score: number;
   maxPlayStreak: number;
   maxRestStreak: number;
@@ -29,6 +33,7 @@ type Input = {
   players: Player[];
   coaches: Coach[];
   matchCount: number;
+  homeMatchCount: number;
   playersPerMatch: number;
   attempts?: number;
 };
@@ -55,17 +60,40 @@ function longestRun(values: boolean[], target: boolean): number {
 function scoreSchedule(
   matches: ScheduledMatch[],
   players: Player[],
+  coaches: Coach[],
 ): Omit<ScheduleResult, "matches"> {
   const appearances: Record<string, number> = Object.fromEntries(
     players.map((player) => [player.id, 0]),
   );
+  const homeAppearances: Record<string, number> = Object.fromEntries(
+    players.map((player) => [player.id, 0]),
+  );
+  const coachAppearances: Record<string, number> = Object.fromEntries(
+    coaches.map((coach) => [coach.id, 0]),
+  );
+  const coachHomeAppearances: Record<string, number> = Object.fromEntries(
+    coaches.map((coach) => [coach.id, 0]),
+  );
 
   for (const match of matches) {
-    for (const playerId of match.playerIds) appearances[playerId] += 1;
+    for (const playerId of match.playerIds) {
+      appearances[playerId] += 1;
+      if (match.isHome) homeAppearances[playerId] += 1;
+    }
+    for (const coachId of match.coachIds) {
+      coachAppearances[coachId] += 1;
+      if (match.isHome) coachHomeAppearances[coachId] += 1;
+    }
   }
 
   const counts = players.map((player) => appearances[player.id]);
   const average = counts.reduce((sum, value) => sum + value, 0) / players.length;
+  const homeCounts = players.map((player) => homeAppearances[player.id]);
+  const homeAverage =
+    homeCounts.reduce((sum, value) => sum + value, 0) / players.length;
+  const coachHomeCounts = coaches.map((coach) => coachHomeAppearances[coach.id]);
+  const coachHomeAverage =
+    coachHomeCounts.reduce((sum, value) => sum + value, 0) / coaches.length;
 
   let fairnessPenalty = 0;
   let streakPenalty = 0;
@@ -80,6 +108,8 @@ function scoreSchedule(
     maxRestStreak = Math.max(maxRestStreak, restRun);
 
     fairnessPenalty += Math.pow(appearances[player.id] - average, 2) * 1000;
+    fairnessPenalty +=
+      Math.pow(homeAppearances[player.id] - homeAverage, 2) * 260;
     streakPenalty += Math.pow(Math.max(0, playRun - 2), 2) * 90;
     streakPenalty += Math.pow(Math.max(0, restRun - 2), 2) * 70;
 
@@ -88,8 +118,16 @@ function scoreSchedule(
     }
   }
 
+  for (const coach of coaches) {
+    fairnessPenalty +=
+      Math.pow(coachHomeAppearances[coach.id] - coachHomeAverage, 2) * 220;
+  }
+
   return {
     appearances,
+    homeAppearances,
+    coachAppearances,
+    coachHomeAppearances,
     score: fairnessPenalty + streakPenalty,
     maxPlayStreak,
     maxRestStreak,
@@ -98,7 +136,11 @@ function scoreSchedule(
   };
 }
 
-function buildCoachSchedule(coaches: Coach[], matchCount: number): string[][] {
+function buildCoachSchedule(
+  coaches: Coach[],
+  matchCount: number,
+  homePattern: boolean[],
+): string[][] {
   const totalSlots = matchCount * 2;
   const base = Math.floor(totalSlots / coaches.length);
   const extras = totalSlots % coaches.length;
@@ -141,6 +183,20 @@ function buildCoachSchedule(coaches: Coach[], matchCount: number): string[][] {
       score += Math.pow(Math.max(0, longestRun(pattern, false) - 2), 2) * 10;
     }
 
+    const homeCounts = new Map(coaches.map((coach) => [coach.id, 0]));
+    for (let index = 0; index < schedule.length; index += 1) {
+      if (!homePattern[index]) continue;
+      for (const coachId of schedule[index]) {
+        homeCounts.set(coachId, (homeCounts.get(coachId) ?? 0) + 1);
+      }
+    }
+    const homeAverage =
+      [...homeCounts.values()].reduce((sum, value) => sum + value, 0) /
+      coaches.length;
+    for (const count of homeCounts.values()) {
+      score += Math.pow(count - homeAverage, 2) * 24;
+    }
+
     const pairCounts = new Map<string, number>();
     for (const [first, second] of schedule) {
       const key = [first, second].sort().join("::");
@@ -164,14 +220,27 @@ function buildCoachSchedule(coaches: Coach[], matchCount: number): string[][] {
 }
 
 function buildCandidate(input: Input): ScheduledMatch[] {
-  const { players, coaches, matchCount, playersPerMatch } = input;
-  const coachSchedule = buildCoachSchedule(coaches, matchCount);
+  const { players, coaches, matchCount, homeMatchCount, playersPerMatch } = input;
+  const homeIndices = new Set(
+    shuffled(Array.from({ length: matchCount }, (_, index) => index)).slice(
+      0,
+      homeMatchCount,
+    ),
+  );
+  const homePattern = Array.from(
+    { length: matchCount },
+    (_, index) => homeIndices.has(index),
+  );
+  const coachSchedule = buildCoachSchedule(coaches, matchCount, homePattern);
   const coachById = new Map(coaches.map((coach) => [coach.id, coach]));
   const appearances: Record<string, number> = Object.fromEntries(
     players.map((player) => [player.id, 0]),
   );
   const history: Record<string, boolean[]> = Object.fromEntries(
     players.map((player) => [player.id, []]),
+  );
+  const homeAppearances: Record<string, number> = Object.fromEntries(
+    players.map((player) => [player.id, 0]),
   );
 
   const matches: ScheduledMatch[] = [];
@@ -201,8 +270,13 @@ function buildCandidate(input: Input): ScheduledMatch[] {
           const currentRestStreak =
             recentRest === -1 ? previous.length : recentRest;
 
+          const homeNeed = homePattern[matchIndex]
+            ? homeAppearances[player.id] * 38
+            : 0;
+
           const priority =
             played * 100 +
+            homeNeed +
             currentPlayStreak * 25 -
             currentRestStreak * 18 +
             Math.random() * 12;
@@ -215,12 +289,20 @@ function buildCandidate(input: Input): ScheduledMatch[] {
     }
 
     const playerIds = shuffled([...selected]);
-    matches.push({ number: matchIndex + 1, coachIds, playerIds });
+    matches.push({
+      number: matchIndex + 1,
+      isHome: homePattern[matchIndex],
+      coachIds,
+      playerIds,
+    });
 
     for (const player of players) {
       const didPlay = selected.has(player.id);
       history[player.id].push(didPlay);
-      if (didPlay) appearances[player.id] += 1;
+      if (didPlay) {
+        appearances[player.id] += 1;
+        if (homePattern[matchIndex]) homeAppearances[player.id] += 1;
+      }
     }
   }
 
@@ -228,8 +310,18 @@ function buildCandidate(input: Input): ScheduledMatch[] {
 }
 
 export function generateSchedule(input: Input): ScheduleResult {
-  const { players, coaches, matchCount, playersPerMatch, attempts = 700 } = input;
+  const {
+    players,
+    coaches,
+    matchCount,
+    homeMatchCount,
+    playersPerMatch,
+    attempts = 700,
+  } = input;
 
+  if (homeMatchCount < 0 || homeMatchCount > matchCount) {
+    throw new Error("Antalet hemmamatcher måste vara mellan 0 och totalt antal matcher.");
+  }
   if (players.length < playersPerMatch) {
     throw new Error("Antalet spelare per match kan inte vara större än laget.");
   }
@@ -247,7 +339,7 @@ export function generateSchedule(input: Input): ScheduleResult {
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const matches = buildCandidate(input);
-    const scored = scoreSchedule(matches, players);
+    const scored = scoreSchedule(matches, players, coaches);
     const result = { matches, ...scored };
 
     if (!best || result.score < best.score) best = result;
