@@ -16,6 +16,7 @@ type SavedState = {
   players: Player[];
   coaches: Coach[];
   matchCount: number;
+  homeMatchCount: number;
   playersPerMatch: number;
   result: ScheduleResult | null;
 };
@@ -39,6 +40,7 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>(makePlayers);
   const [coaches, setCoaches] = useState<Coach[]>(makeCoaches);
   const [matchCount, setMatchCount] = useState(9);
+  const [homeMatchCount, setHomeMatchCount] = useState(4);
   const [playersPerMatch, setPlayersPerMatch] = useState(8);
   const [result, setResult] = useState<ScheduleResult | null>(null);
   const [error, setError] = useState("");
@@ -52,6 +54,7 @@ export default function Home() {
         setPlayers(saved.players);
         setCoaches(saved.coaches);
         setMatchCount(saved.matchCount);
+        setHomeMatchCount(saved.homeMatchCount ?? Math.floor(saved.matchCount / 2));
         setPlayersPerMatch(saved.playersPerMatch);
         setResult(saved.result);
       } catch {
@@ -67,11 +70,12 @@ export default function Home() {
       players,
       coaches,
       matchCount,
+      homeMatchCount,
       playersPerMatch,
       result,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [players, coaches, matchCount, playersPerMatch, result, loaded]);
+  }, [players, coaches, matchCount, homeMatchCount, playersPerMatch, result, loaded]);
 
   const playerName = useMemo(
     () => new Map(players.map((player) => [player.id, player.name || "Namnlös"])),
@@ -159,6 +163,7 @@ export default function Home() {
           players,
           coaches,
           matchCount,
+          homeMatchCount,
           playersPerMatch,
         }),
       );
@@ -188,7 +193,25 @@ export default function Home() {
             max={50}
             value={matchCount}
             onChange={(event) => {
-              setMatchCount(Number(event.target.value));
+              const value = Number(event.target.value);
+              setMatchCount(value);
+              setHomeMatchCount((current) => Math.min(current, value));
+              setResult(null);
+            }}
+          />
+        </div>
+        <div>
+          <label htmlFor="home-matches">Varav hemmamatcher</label>
+          <input
+            id="home-matches"
+            type="number"
+            min={0}
+            max={matchCount}
+            value={homeMatchCount}
+            onChange={(event) => {
+              setHomeMatchCount(
+                Math.min(matchCount, Math.max(0, Number(event.target.value))),
+              );
               setResult(null);
             }}
           />
@@ -350,7 +373,10 @@ export default function Home() {
           <div className="schedule-list">
             {result.matches.map((match) => (
               <article className="match-card" key={match.number}>
-                <div className="match-number">Match {match.number}</div>
+                <div className="match-number">
+                  <span>Match {match.number}</span>
+                  <small>{match.isHome ? "Hemma" : "Borta"}</small>
+                </div>
                 <div className="match-content">
                   <div>
                     <span className="label">Tränare</span>
@@ -386,7 +412,34 @@ export default function Home() {
                         <small> tränarbarn</small>
                       )}
                     </span>
-                    <strong>{result.appearances[player.id]}</strong>
+                    <strong>
+                      {result.appearances[player.id]}
+                      <small className="home-count">
+                        {" "}· {result.homeAppearances[player.id]} hemma
+                      </small>
+                    </strong>
+                  </div>
+                ))}
+            </div>
+          </section>
+          <section className="card fairness">
+            <h2>Tränarfördelning</h2>
+            <div className="fairness-grid">
+              {[...coaches]
+                .sort(
+                  (a, b) =>
+                    result.coachAppearances[b.id] - result.coachAppearances[a.id] ||
+                    a.name.localeCompare(b.name, "sv"),
+                )
+                .map((coach) => (
+                  <div key={coach.id}>
+                    <span>{coach.name}</span>
+                    <strong>
+                      {result.coachAppearances[coach.id]}
+                      <small className="home-count">
+                        {" "}· {result.coachHomeAppearances[coach.id]} hemma
+                      </small>
+                    </strong>
                   </div>
                 ))}
             </div>
