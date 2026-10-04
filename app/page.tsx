@@ -16,7 +16,7 @@ type SavedState = {
   players: Player[];
   coaches: Coach[];
   matchCount: number;
-  homeMatchCount: number;
+  homePattern: boolean[];
   playersPerMatch: number;
   result: ScheduleResult | null;
 };
@@ -40,7 +40,9 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>(makePlayers);
   const [coaches, setCoaches] = useState<Coach[]>(makeCoaches);
   const [matchCount, setMatchCount] = useState(9);
-  const [homeMatchCount, setHomeMatchCount] = useState(4);
+  const [homePattern, setHomePattern] = useState<boolean[]>([
+    true, false, true, false, true, false, true, false, false,
+  ]);
   const [playersPerMatch, setPlayersPerMatch] = useState(8);
   const [result, setResult] = useState<ScheduleResult | null>(null);
   const [error, setError] = useState("");
@@ -54,7 +56,14 @@ export default function Home() {
         setPlayers(saved.players);
         setCoaches(saved.coaches);
         setMatchCount(saved.matchCount);
-        setHomeMatchCount(saved.homeMatchCount ?? Math.floor(saved.matchCount / 2));
+        const legacyHomeCount = (saved as SavedState & { homeMatchCount?: number }).homeMatchCount;
+        setHomePattern(
+          saved.homePattern ??
+            Array.from(
+              { length: saved.matchCount },
+              (_, index) => index < (legacyHomeCount ?? Math.floor(saved.matchCount / 2)),
+            ),
+        );
         setPlayersPerMatch(saved.playersPerMatch);
         setResult(saved.result);
       } catch {
@@ -70,12 +79,12 @@ export default function Home() {
       players,
       coaches,
       matchCount,
-      homeMatchCount,
+      homePattern,
       playersPerMatch,
       result,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [players, coaches, matchCount, homeMatchCount, playersPerMatch, result, loaded]);
+  }, [players, coaches, matchCount, homePattern, playersPerMatch, result, loaded]);
 
   const playerName = useMemo(
     () => new Map(players.map((player) => [player.id, player.name || "Namnlös"])),
@@ -163,7 +172,7 @@ export default function Home() {
           players,
           coaches,
           matchCount,
-          homeMatchCount,
+          homePattern,
           playersPerMatch,
         }),
       );
@@ -193,24 +202,10 @@ export default function Home() {
             max={50}
             value={matchCount}
             onChange={(event) => {
-              const value = Number(event.target.value);
+              const value = Math.max(1, Number(event.target.value));
               setMatchCount(value);
-              setHomeMatchCount((current) => Math.min(current, value));
-              setResult(null);
-            }}
-          />
-        </div>
-        <div>
-          <label htmlFor="home-matches">Varav hemmamatcher</label>
-          <input
-            id="home-matches"
-            type="number"
-            min={0}
-            max={matchCount}
-            value={homeMatchCount}
-            onChange={(event) => {
-              setHomeMatchCount(
-                Math.min(matchCount, Math.max(0, Number(event.target.value))),
+              setHomePattern((current) =>
+                Array.from({ length: value }, (_, index) => current[index] ?? false),
               );
               setResult(null);
             }}
@@ -234,6 +229,35 @@ export default function Home() {
           {matchCount * playersPerMatch} spelarplatser totalt ·{" "}
           {(matchCount * playersPerMatch / players.length).toFixed(1)} per barn i
           snitt
+        </div>
+      </section>
+
+      <section className="card venue-settings">
+        <div className="section-heading">
+          <div>
+            <span className="step">↕</span>
+            <h2>Hemma / borta i spelordning</h2>
+          </div>
+          <span>{homePattern.filter(Boolean).length} hemmamatcher</span>
+        </div>
+        <div className="venue-grid">
+          {homePattern.map((isHome, index) => (
+            <label className="venue-row" key={index}>
+              <span>Match {index + 1}</span>
+              <select
+                value={isHome ? "home" : "away"}
+                onChange={(event) => {
+                  const next = [...homePattern];
+                  next[index] = event.target.value === "home";
+                  setHomePattern(next);
+                  setResult(null);
+                }}
+              >
+                <option value="home">Hemma</option>
+                <option value="away">Borta</option>
+              </select>
+            </label>
+          ))}
         </div>
       </section>
 
