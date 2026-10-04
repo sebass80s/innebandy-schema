@@ -110,7 +110,7 @@ function buildCoachSchedule(coaches: Coach[], matchCount: number): string[][] {
   let best: string[][] | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
 
-  for (let attempt = 0; attempt < 700; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const pool = shuffled(targetEntries);
     const schedule: string[][] = [];
     let valid = true;
@@ -216,7 +216,7 @@ function buildCandidate(input: Input): ScheduledMatch[] {
 }
 
 export function generateSchedule(input: Input): ScheduleResult {
-  const { players, coaches, matchCount, playersPerMatch, attempts = 3500 } = input;
+  const { players, coaches, matchCount, playersPerMatch, attempts = 700 } = input;
 
   if (players.length < playersPerMatch) {
     throw new Error("Antalet spelare per match kan inte vara större än laget.");
