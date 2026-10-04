@@ -191,12 +191,29 @@ export default function Home() {
   return (
     <main className="shell">
       <header className="hero">
-        <div className="eyebrow">Innebandy · rotationsschema</div>
-        <h1>Roterande schema</h1>
-        <p>
-          Skapa ett så jämnt säsongsschema som möjligt. Två tränare följer med
-          varje match och deras barn får automatiskt en plats.
-        </p>
+        <div className="hero-copy">
+          <div className="eyebrow">Innebandy · rotationsschema</div>
+          <h1>Roterande schema</h1>
+          <p>
+            Skapa ett så jämnt säsongsschema som möjligt. Två tränare följer med
+            varje match och deras barn får automatiskt en plats.
+          </p>
+        </div>
+        <div className="floorball-visual" aria-hidden="true">
+          <div className="floorball-stick">
+            <span className="stick-shaft" />
+            <span className="stick-blade" />
+          </div>
+          <div className="floorball-ball">
+            <span className="hole h1" />
+            <span className="hole h2" />
+            <span className="hole h3" />
+            <span className="hole h4" />
+            <span className="hole h5" />
+            <span className="hole h6" />
+          </div>
+          <div className="court-line" />
+        </div>
       </header>
 
       <section className="card settings">
