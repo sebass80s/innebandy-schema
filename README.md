@@ -35,3 +35,7 @@ Rättvisa optimeras i denna ordning:
 5. slumpvariation mellan jämnbra scheman
 
 Om tränarkravet gör helt lika antal matcher matematiskt omöjligt får tränarbarn extra matcher endast när det behövs.
+
+## Publicering
+
+Sajten publiceras automatiskt via GitHub Pages från `main`.
