@@ -520,6 +520,25 @@ export default function Home() {
                 ))}
             </div>
           </section>
+          <section className="card fairness child-matches">
+            <h2>Matcher per barn</h2>
+            <div className="child-match-list">
+              {[...players]
+                .sort((a, b) => a.name.localeCompare(b.name, "sv"))
+                .map((player) => {
+                  const matches = result.matches
+                    .filter((match) => match.playerIds.includes(player.id))
+                    .map((match) => match.number);
+
+                  return (
+                    <div key={player.id}>
+                      <span>{player.name}</span>
+                      <strong>{matches.join(", ")}</strong>
+                    </div>
+                  );
+                })}
+            </div>
+          </section>
         </section>
       )}
     </main>
