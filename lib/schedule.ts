@@ -421,6 +421,22 @@ export function generateSchedule(input: Input): ScheduleResult {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const matches = buildCandidate(input);
     const scored = scoreSchedule(matches, players, coaches);
+
+    const coachChildIds = new Set(coaches.map((coach) => coach.childId));
+    const homeCountsForFairness =
+      coaches.length === 2
+        ? players
+            .filter((player) => !coachChildIds.has(player.id))
+            .map((player) => scored.homeAppearances[player.id])
+        : players.map((player) => scored.homeAppearances[player.id]);
+
+    if (
+      homeCountsForFairness.length > 0 &&
+      Math.max(...homeCountsForFairness) - Math.min(...homeCountsForFairness) > 2
+    ) {
+      continue;
+    }
+
     const result = { matches, ...scored };
 
     if (!best || result.score < best.score) best = result;
