@@ -228,7 +228,7 @@ function buildCoachSchedule(
           if ((homes.get(second) ?? 0) >= maxHome) return false;
         }
 
-        if (coaches.length > 2) {
+        if (coaches.length === 4 && matchCount === 9) {
           if (hasTwoStraight(first) || hasTwoStraight(second)) return false;
         }
 
