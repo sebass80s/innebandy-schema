@@ -32,6 +32,9 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Simulate schedules
+        run: npm test
+
       - name: Build static site
         run: npm run build
 
