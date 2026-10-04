@@ -875,3 +875,43 @@ input:focus, select:focus {
     min-height: 42px;
   }
 }
+
+
+.child-match-list {
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+}
+
+.child-match-list > div {
+  display: grid;
+  grid-template-columns: minmax(140px, .8fr) 1.2fr;
+  gap: 18px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.child-match-list > div:last-child {
+  border-bottom: 0;
+}
+
+.child-match-list span {
+  color: var(--ink);
+}
+
+.child-match-list strong {
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+@media (max-width: 640px) {
+  .child-match-list > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .child-match-list strong {
+    color: var(--green-dark);
+  }
+}
