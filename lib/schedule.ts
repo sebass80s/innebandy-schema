@@ -205,7 +205,7 @@ function buildCoachSchedule(
 
     for (const count of pairCounts.values()) {
       if (count > 1) {
-        score += Math.pow(count - 1, 2) * 35;
+        score += Math.pow(count - 1, 2) * 400;
       }
     }
 
