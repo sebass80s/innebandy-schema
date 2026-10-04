@@ -141,103 +141,168 @@ function buildCoachSchedule(
   matchCount: number,
   homePattern: boolean[],
 ): string[][] {
+  const coachIds = coaches.map((coach) => coach.id);
   const totalSlots = matchCount * 2;
-  const base = Math.floor(totalSlots / coaches.length);
-  const extras = totalSlots % coaches.length;
+  const homeSlots = homePattern.filter(Boolean).length * 2;
 
-  const targetEntries = shuffled(coaches).flatMap((coach, index) =>
-    Array.from({ length: base + (index < extras ? 1 : 0) }, () => coach.id),
-  );
+  const minTotal = Math.floor(totalSlots / coaches.length);
+  const maxTotal = Math.ceil(totalSlots / coaches.length);
+  const minHome = Math.floor(homeSlots / coaches.length);
+  const maxHome = Math.ceil(homeSlots / coaches.length);
 
-  let best: string[][] | null = null;
-  let bestScore = Number.POSITIVE_INFINITY;
+  const possiblePairs = (coaches.length * (coaches.length - 1)) / 2;
+  const desiredUniquePairs = Math.min(possiblePairs, matchCount);
+  const requiredUniquePairs = Math.min(desiredUniquePairs, matchCount - 1);
 
-  for (let attempt = 0; attempt < 1200; attempt += 1) {
-    const pool = shuffled(targetEntries);
-    const schedule: string[][] = [];
-    let valid = true;
-
-    for (let match = 0; match < matchCount; match += 1) {
-      const first = pool.pop();
-      if (!first) {
-        valid = false;
-        break;
-      }
-
-      const secondIndex = pool.findIndex((id) => id !== first);
-      if (secondIndex < 0) {
-        valid = false;
-        break;
-      }
-
-      const [second] = pool.splice(secondIndex, 1);
-      schedule.push([first, second]);
-    }
-
-    if (!valid) continue;
-
-    let score = 0;
-    let hasForbiddenCoachStreak = false;
-    for (const coach of coaches) {
-      const pattern = schedule.map((ids) => ids.includes(coach.id));
-      const playRun = longestRun(pattern, true);
-
-      if (coaches.length > 2 && playRun > 2) {
-        hasForbiddenCoachStreak = true;
-        break;
-      }
-
-      score += Math.pow(Math.max(0, playRun - 2), 2) * 1200;
-      score += Math.pow(Math.max(0, longestRun(pattern, false) - 2), 2) * 10;
-    }
-
-    if (hasForbiddenCoachStreak) continue;
-
-    const homeCounts = new Map(coaches.map((coach) => [coach.id, 0]));
-    for (let index = 0; index < schedule.length; index += 1) {
-      if (!homePattern[index]) continue;
-      for (const coachId of schedule[index]) {
-        homeCounts.set(coachId, (homeCounts.get(coachId) ?? 0) + 1);
-      }
-    }
-    const homeValues = [...homeCounts.values()];
-    const minHome = Math.min(...homeValues);
-    const maxHome = Math.max(...homeValues);
-
-    if (maxHome - minHome > 1) continue;
-
-    const homeAverage =
-      homeValues.reduce((sum, value) => sum + value, 0) /
-      coaches.length;
-    for (const count of homeValues) {
-      score += Math.pow(count - homeAverage, 2) * 24;
-    }
-
-    const pairCounts = new Map<string, number>();
-    for (const [first, second] of schedule) {
-      const key = [first, second].sort().join("::");
-      pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
-    }
-
-    if (coaches.length === 4 && matchCount === 9) {
-      if (pairCounts.size < 6) continue;
-      if ([...pairCounts.values()].some((count) => count > 2)) continue;
-    }
-
-    for (const count of pairCounts.values()) {
-      if (count > 1) {
-        score += Math.pow(count - 1, 2) * 400;
-      }
-    }
-
-    if (score < bestScore) {
-      best = schedule;
-      bestScore = score;
+  const pairs: [string, string][] = [];
+  for (let first = 0; first < coachIds.length; first += 1) {
+    for (let second = first + 1; second < coachIds.length; second += 1) {
+      pairs.push([coachIds[first], coachIds[second]]);
     }
   }
 
-  if (!best) throw new Error("Kunde inte skapa ett giltigt tränarschema.");
-  return best;
+  const totals = new Map(coachIds.map((id) => [id, 0]));
+  const homes = new Map(coachIds.map((id) => [id, 0]));
+  const pairCounts = new Map<string, number>();
+  const schedule: string[][] = [];
+
+  const pairKey = (a: string, b: string) => [a, b].sort().join("::");
+
+  const hasTwoStraight = (coachId: string) => {
+    if (schedule.length < 2) return false;
+    return (
+      schedule[schedule.length - 1].includes(coachId) &&
+      schedule[schedule.length - 2].includes(coachId)
+    );
+  };
+
+  const remainingCapacityIsFeasible = (nextMatchIndex: number) => {
+    const remainingMatches = matchCount - nextMatchIndex;
+    const remainingSlots = remainingMatches * 2;
+    const remainingHomeSlots =
+      homePattern.slice(nextMatchIndex).filter(Boolean).length * 2;
+
+    let totalDeficit = 0;
+    let homeDeficit = 0;
+
+    for (const id of coachIds) {
+      totalDeficit += Math.max(0, minTotal - (totals.get(id) ?? 0));
+      homeDeficit += Math.max(0, minHome - (homes.get(id) ?? 0));
+    }
+
+    if (totalDeficit > remainingSlots) return false;
+    if (homeDeficit > remainingHomeSlots) return false;
+
+    const uniquePairs = pairCounts.size;
+    if (uniquePairs + remainingMatches < requiredUniquePairs) return false;
+
+    return true;
+  };
+
+  const search = (matchIndex: number): boolean => {
+    if (matchIndex === matchCount) {
+      const totalValues = [...totals.values()];
+      const homeValues = [...homes.values()];
+
+      if (Math.max(...totalValues) - Math.min(...totalValues) > 1) return false;
+      if (Math.max(...homeValues) - Math.min(...homeValues) > 1) return false;
+      if (pairCounts.size < requiredUniquePairs) return false;
+
+      if (coaches.length === 4 && matchCount === 9) {
+        if (pairCounts.size !== 6) return false;
+        if ([...pairCounts.values()].some((count) => count > 2)) return false;
+      }
+
+      return true;
+    }
+
+    const isHome = homePattern[matchIndex];
+
+    const candidates = shuffled(pairs)
+      .filter(([first, second]) => {
+        if ((totals.get(first) ?? 0) >= maxTotal) return false;
+        if ((totals.get(second) ?? 0) >= maxTotal) return false;
+
+        if (isHome) {
+          if ((homes.get(first) ?? 0) >= maxHome) return false;
+          if ((homes.get(second) ?? 0) >= maxHome) return false;
+        }
+
+        if (coaches.length > 2) {
+          if (hasTwoStraight(first) || hasTwoStraight(second)) return false;
+        }
+
+        const key = pairKey(first, second);
+        if (
+          coaches.length === 4 &&
+          matchCount === 9 &&
+          (pairCounts.get(key) ?? 0) >= 2
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort(([a1, b1], [a2, b2]) => {
+        const key1 = pairKey(a1, b1);
+        const key2 = pairKey(a2, b2);
+        const repeat1 = pairCounts.get(key1) ?? 0;
+        const repeat2 = pairCounts.get(key2) ?? 0;
+        if (repeat1 !== repeat2) return repeat1 - repeat2;
+
+        const totalLoad1 = (totals.get(a1) ?? 0) + (totals.get(b1) ?? 0);
+        const totalLoad2 = (totals.get(a2) ?? 0) + (totals.get(b2) ?? 0);
+        if (totalLoad1 !== totalLoad2) return totalLoad1 - totalLoad2;
+
+        if (isHome) {
+          const homeLoad1 = (homes.get(a1) ?? 0) + (homes.get(b1) ?? 0);
+          const homeLoad2 = (homes.get(a2) ?? 0) + (homes.get(b2) ?? 0);
+          if (homeLoad1 !== homeLoad2) return homeLoad1 - homeLoad2;
+        }
+
+        return 0;
+      });
+
+    for (const [first, second] of candidates) {
+      const key = pairKey(first, second);
+
+      schedule.push([first, second]);
+      totals.set(first, (totals.get(first) ?? 0) + 1);
+      totals.set(second, (totals.get(second) ?? 0) + 1);
+      if (isHome) {
+        homes.set(first, (homes.get(first) ?? 0) + 1);
+        homes.set(second, (homes.get(second) ?? 0) + 1);
+      }
+      pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
+
+      if (
+        remainingCapacityIsFeasible(matchIndex + 1) &&
+        search(matchIndex + 1)
+      ) {
+        return true;
+      }
+
+      schedule.pop();
+      totals.set(first, (totals.get(first) ?? 0) - 1);
+      totals.set(second, (totals.get(second) ?? 0) - 1);
+      if (isHome) {
+        homes.set(first, (homes.get(first) ?? 0) - 1);
+        homes.set(second, (homes.get(second) ?? 0) - 1);
+      }
+
+      const nextPairCount = (pairCounts.get(key) ?? 1) - 1;
+      if (nextPairCount === 0) pairCounts.delete(key);
+      else pairCounts.set(key, nextPairCount);
+    }
+
+    return false;
+  };
+
+  if (!search(0)) {
+    throw new Error("Kunde inte skapa ett giltigt tränarschema.");
+  }
+
+  return schedule;
 }
 
 function buildCandidate(input: Input): ScheduledMatch[] {
