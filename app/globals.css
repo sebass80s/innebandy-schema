@@ -302,3 +302,66 @@ input:focus, select:focus {
   .match-card { grid-template-columns: 82px 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
 }
+
+.add-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: #fbfdfb;
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
+.add-button:hover {
+  border-color: var(--green);
+  background: var(--mint);
+}
+
+.name-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 36px;
+  align-items: center;
+  gap: 7px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.icon-button:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: #e4bcbc;
+  background: #fff7f7;
+}
+
+.icon-button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.coach-title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coach-title strong {
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .name-row { grid-template-columns: 26px 1fr 36px; }
+}
