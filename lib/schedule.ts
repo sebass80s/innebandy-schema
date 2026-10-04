@@ -110,8 +110,8 @@ function scoreSchedule(
     fairnessPenalty += Math.pow(appearances[player.id] - average, 2) * 1000;
     fairnessPenalty +=
       Math.pow(homeAppearances[player.id] - homeAverage, 2) * 900;
-    streakPenalty += Math.pow(Math.max(0, playRun - 2), 2) * 90;
-    streakPenalty += Math.pow(Math.max(0, restRun - 2), 2) * 70;
+    streakPenalty += Math.pow(Math.max(0, playRun - 2), 2) * 5000;
+    streakPenalty += Math.pow(Math.max(0, restRun - 2), 2) * 5000;
 
     for (let i = 1; i < pattern.length; i += 1) {
       if (pattern[i] === pattern[i - 1]) streakPenalty += 7;
@@ -274,11 +274,15 @@ function buildCandidate(input: Input): ScheduledMatch[] {
             ? homeAppearances[player.id] * 85
             : 0;
 
+          const streakPriority =
+            (currentPlayStreak >= 2 ? 100000 : 0) -
+            (currentRestStreak >= 2 ? 100000 : 0);
+
           const priority =
+            streakPriority +
             played * 100 +
             homeNeed +
-            currentPlayStreak * 25 +
-            (currentPlayStreak >= 2 ? 1000 : 0) -
+            currentPlayStreak * 25 -
             currentRestStreak * 18 +
             Math.random() * 12;
 
