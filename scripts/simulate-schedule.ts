@@ -121,12 +121,25 @@ for (const scenario of scenarios) {
     const homeCounts = players.map((player) => result.homeAppearances[player.id]);
     const average = expectedSlots / scenario.playerCount;
     const spread = Math.max(...counts) - Math.min(...counts);
+    const coachChildIds = new Set(coaches.map((coach) => coach.childId));
+    const nonCoachCounts = players
+      .filter((player) => !coachChildIds.has(player.id))
+      .map((player) => result.appearances[player.id]);
 
-    // The generator should stay very close to the mathematical average.
-    assert(
-      spread <= 2,
-      `${scenario.name} run ${run}: för stor skillnad mellan flest/minst matcher (${spread})`,
-    );
+    // With exactly two coaches, both coaches must attend every match and both
+    // coach children are therefore forced to play every match. Judge fairness
+    // among the remaining players instead of asserting an impossible team-wide spread.
+    if (scenario.coachCount === 2) {
+      assert(
+        Math.max(...nonCoachCounts) - Math.min(...nonCoachCounts) <= 2,
+        `${scenario.name} run ${run}: för stor skillnad mellan övriga spelare`,
+      );
+    } else {
+      assert(
+        spread <= 2,
+        `${scenario.name} run ${run}: för stor skillnad mellan flest/minst matcher (${spread})`,
+      );
+    }
     assert(
       Math.max(...homeCounts) - Math.min(...homeCounts) <= 2,
       `${scenario.name} run ${run}: för ojämn fördelning av hemmamatcher`,
@@ -137,15 +150,21 @@ for (const scenario of scenarios) {
       const playRun = longestRun(pattern, true);
       const restRun = longestRun(pattern, false);
 
-      // Generic scenarios can occasionally require a 3-run, but longer streaks are unacceptable.
-      assert(
-        playRun <= 3,
-        `${scenario.name} run ${run}: för lång spelsvit för ${player.id} (${playRun})`,
-      );
-      assert(
-        restRun <= 3,
-        `${scenario.name} run ${run}: för lång vilosvit för ${player.id} (${restRun})`,
-      );
+      // With exactly two coaches, their children are forced to play every match.
+      // All other players should still stay within the normal streak bounds.
+      const isForcedEveryMatch =
+        scenario.coachCount === 2 && coachChildIds.has(player.id);
+
+      if (!isForcedEveryMatch) {
+        assert(
+          playRun <= 3,
+          `${scenario.name} run ${run}: för lång spelsvit för ${player.id} (${playRun})`,
+        );
+        assert(
+          restRun <= 3,
+          `${scenario.name} run ${run}: för lång vilosvit för ${player.id} (${restRun})`,
+        );
+      }
     }
 
     const coachAppearances = new Map<string, number>(
