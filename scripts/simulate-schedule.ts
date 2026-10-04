@@ -53,6 +53,18 @@ for (let run = 1; run <= 60; run += 1) {
   assert(Math.max(...counts) <= 5, `Run ${run}: någon fick fler än fem matcher`);
   assert(result.maxPlayStreak <= 2, `Run ${run}: för lång spelsvit`);
   assert(result.maxRestStreak <= 2, `Run ${run}: för lång vilosvit`);
+
+  const pairCounts = new Map<string, number>();
+  for (const match of result.matches) {
+    const key = [...match.coachIds].sort().join("::");
+    pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
+  }
+
+  assert(pairCounts.size === 6, `Run ${run}: alla sex tränarpar användes inte`);
+  assert(
+    Math.max(...pairCounts.values()) <= 2,
+    `Run ${run}: samma tränarpar användes fler än två gånger`,
+  );
 }
 
 console.log("60 simulations PASS");
