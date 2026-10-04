@@ -19,20 +19,21 @@ type Scenario = {
   playerCount: number;
   coachCount: number;
   matchCount: number;
+  homeMatchCount: number;
   playersPerMatch: number;
   runs: number;
 };
 
 const scenarios: Scenario[] = [
-  { name: "standard", playerCount: 18, coachCount: 4, matchCount: 9, playersPerMatch: 8, runs: 60 },
-  { name: "12p-3c", playerCount: 12, coachCount: 3, matchCount: 6, playersPerMatch: 7, runs: 25 },
-  { name: "14p-4c", playerCount: 14, coachCount: 4, matchCount: 8, playersPerMatch: 8, runs: 25 },
-  { name: "16p-5c", playerCount: 16, coachCount: 5, matchCount: 10, playersPerMatch: 9, runs: 25 },
-  { name: "18p-5c", playerCount: 18, coachCount: 5, matchCount: 9, playersPerMatch: 9, runs: 25 },
-  { name: "20p-4c", playerCount: 20, coachCount: 4, matchCount: 10, playersPerMatch: 10, runs: 25 },
-  { name: "20p-6c", playerCount: 20, coachCount: 6, matchCount: 12, playersPerMatch: 10, runs: 25 },
-  { name: "22p-5c", playerCount: 22, coachCount: 5, matchCount: 11, playersPerMatch: 10, runs: 25 },
-  { name: "24p-6c", playerCount: 24, coachCount: 6, matchCount: 12, playersPerMatch: 12, runs: 25 },
+  { name: "standard", playerCount: 18, coachCount: 4, matchCount: 9, homeMatchCount: 4, playersPerMatch: 8, runs: 60 },
+  { name: "12p-3c", playerCount: 12, coachCount: 3, matchCount: 6, homeMatchCount: 3, playersPerMatch: 7, runs: 25 },
+  { name: "14p-4c", playerCount: 14, coachCount: 4, matchCount: 8, homeMatchCount: 4, playersPerMatch: 8, runs: 25 },
+  { name: "16p-5c", playerCount: 16, coachCount: 5, matchCount: 10, homeMatchCount: 5, playersPerMatch: 9, runs: 25 },
+  { name: "18p-5c", playerCount: 18, coachCount: 5, matchCount: 9, homeMatchCount: 4, playersPerMatch: 9, runs: 25 },
+  { name: "20p-4c", playerCount: 20, coachCount: 4, matchCount: 10, homeMatchCount: 5, playersPerMatch: 10, runs: 25 },
+  { name: "20p-6c", playerCount: 20, coachCount: 6, matchCount: 12, homeMatchCount: 6, playersPerMatch: 10, runs: 25 },
+  { name: "22p-5c", playerCount: 22, coachCount: 5, matchCount: 11, homeMatchCount: 5, playersPerMatch: 10, runs: 25 },
+  { name: "24p-6c", playerCount: 24, coachCount: 6, matchCount: 12, homeMatchCount: 6, playersPerMatch: 12, runs: 25 },
 ];
 
 let totalRuns = 0;
@@ -56,6 +57,7 @@ for (const scenario of scenarios) {
       players,
       coaches,
       matchCount: scenario.matchCount,
+      homeMatchCount: scenario.homeMatchCount,
       playersPerMatch: scenario.playersPerMatch,
       attempts: scenario.name === "standard" ? 250 : 140,
     });
@@ -66,6 +68,11 @@ for (const scenario of scenarios) {
     );
 
     const expectedSlots = scenario.matchCount * scenario.playersPerMatch;
+    const homeMatches = result.matches.filter((match) => match.isHome);
+    assert(
+      homeMatches.length === scenario.homeMatchCount,
+      `${scenario.name} run ${run}: fel antal hemmamatcher`,
+    );
     const totalSlots = result.matches.reduce(
       (sum, match) => sum + match.playerIds.length,
       0,
@@ -104,6 +111,7 @@ for (const scenario of scenarios) {
     }
 
     const counts = players.map((player) => result.appearances[player.id]);
+    const homeCounts = players.map((player) => result.homeAppearances[player.id]);
     const average = expectedSlots / scenario.playerCount;
     const spread = Math.max(...counts) - Math.min(...counts);
 
@@ -111,6 +119,10 @@ for (const scenario of scenarios) {
     assert(
       spread <= 2,
       `${scenario.name} run ${run}: för stor skillnad mellan flest/minst matcher (${spread})`,
+    );
+    assert(
+      Math.max(...homeCounts) - Math.min(...homeCounts) <= 2,
+      `${scenario.name} run ${run}: för ojämn fördelning av hemmamatcher`,
     );
 
     for (const player of players) {
@@ -143,9 +155,16 @@ for (const scenario of scenarios) {
     }
 
     const coachCounts = [...coachAppearances.values()];
+    const coachHomeCounts = coaches.map(
+      (coach) => result.coachHomeAppearances[coach.id],
+    );
     assert(
       Math.max(...coachCounts) - Math.min(...coachCounts) <= 1,
       `${scenario.name} run ${run}: tränarmatcherna är inte jämnt fördelade`,
+    );
+    assert(
+      Math.max(...coachHomeCounts) - Math.min(...coachHomeCounts) <= 1,
+      `${scenario.name} run ${run}: tränarnas hemmamatcher är inte jämnt fördelade`,
     );
 
     const possiblePairs = (scenario.coachCount * (scenario.coachCount - 1)) / 2;
