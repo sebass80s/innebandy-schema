@@ -65,7 +65,14 @@ export default function Home() {
             ),
         );
         setPlayersPerMatch(saved.playersPerMatch);
-        setResult(saved.result);
+        const savedResult = saved.result;
+        const hasCurrentResultShape =
+          savedResult &&
+          savedResult.matches?.every((match) => typeof match.isHome === "boolean") &&
+          savedResult.homeAppearances &&
+          savedResult.coachAppearances &&
+          savedResult.coachHomeAppearances;
+        setResult(hasCurrentResultShape ? savedResult : null);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
