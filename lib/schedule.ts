@@ -141,6 +141,18 @@ function buildCoachSchedule(coaches: Coach[], matchCount: number): string[][] {
       score += Math.pow(Math.max(0, longestRun(pattern, false) - 2), 2) * 10;
     }
 
+    const pairCounts = new Map<string, number>();
+    for (const [first, second] of schedule) {
+      const key = [first, second].sort().join("::");
+      pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
+    }
+
+    for (const count of pairCounts.values()) {
+      if (count > 1) {
+        score += Math.pow(count - 1, 2) * 35;
+      }
+    }
+
     if (score < bestScore) {
       best = schedule;
       bestScore = score;
