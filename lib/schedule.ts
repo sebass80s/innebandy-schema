@@ -200,10 +200,16 @@ function buildCoachSchedule(
         homeCounts.set(coachId, (homeCounts.get(coachId) ?? 0) + 1);
       }
     }
+    const homeValues = [...homeCounts.values()];
+    const minHome = Math.min(...homeValues);
+    const maxHome = Math.max(...homeValues);
+
+    if (maxHome - minHome > 1) continue;
+
     const homeAverage =
-      [...homeCounts.values()].reduce((sum, value) => sum + value, 0) /
+      homeValues.reduce((sum, value) => sum + value, 0) /
       coaches.length;
-    for (const count of homeCounts.values()) {
+    for (const count of homeValues) {
       score += Math.pow(count - homeAverage, 2) * 24;
     }
 
