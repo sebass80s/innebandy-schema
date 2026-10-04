@@ -533,7 +533,7 @@ export default function Home() {
                   return (
                     <div key={player.id}>
                       <span>{player.name}</span>
-                      <strong>{matches.join(", ")}</strong>
+                      <strong>Ska spela match nr: {matches.join(", ")}</strong>
                     </div>
                   );
                 })}
