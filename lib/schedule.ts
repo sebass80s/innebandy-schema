@@ -33,7 +33,7 @@ type Input = {
   players: Player[];
   coaches: Coach[];
   matchCount: number;
-  homeMatchCount: number;
+  homePattern: boolean[];
   playersPerMatch: number;
   attempts?: number;
 };
@@ -220,17 +220,7 @@ function buildCoachSchedule(
 }
 
 function buildCandidate(input: Input): ScheduledMatch[] {
-  const { players, coaches, matchCount, homeMatchCount, playersPerMatch } = input;
-  const homeIndices = new Set(
-    shuffled(Array.from({ length: matchCount }, (_, index) => index)).slice(
-      0,
-      homeMatchCount,
-    ),
-  );
-  const homePattern = Array.from(
-    { length: matchCount },
-    (_, index) => homeIndices.has(index),
-  );
+  const { players, coaches, matchCount, homePattern, playersPerMatch } = input;
   const coachSchedule = buildCoachSchedule(coaches, matchCount, homePattern);
   const coachById = new Map(coaches.map((coach) => [coach.id, coach]));
   const appearances: Record<string, number> = Object.fromEntries(
@@ -314,13 +304,13 @@ export function generateSchedule(input: Input): ScheduleResult {
     players,
     coaches,
     matchCount,
-    homeMatchCount,
+    homePattern,
     playersPerMatch,
     attempts = 700,
   } = input;
 
-  if (homeMatchCount < 0 || homeMatchCount > matchCount) {
-    throw new Error("Antalet hemmamatcher måste vara mellan 0 och totalt antal matcher.");
+  if (homePattern.length !== matchCount) {
+    throw new Error("Hemma/borta-listan måste innehålla exakt en markering per match.");
   }
   if (players.length < playersPerMatch) {
     throw new Error("Antalet spelare per match kan inte vara större än laget.");
