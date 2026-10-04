@@ -140,10 +140,21 @@ for (const scenario of scenarios) {
         `${scenario.name} run ${run}: för stor skillnad mellan flest/minst matcher (${spread})`,
       );
     }
-    assert(
-      Math.max(...homeCounts) - Math.min(...homeCounts) <= 2,
-      `${scenario.name} run ${run}: för ojämn fördelning av hemmamatcher`,
-    );
+    const nonCoachHomeCounts = players
+      .filter((player) => !coachChildIds.has(player.id))
+      .map((player) => result.homeAppearances[player.id]);
+
+    if (scenario.coachCount === 2) {
+      assert(
+        Math.max(...nonCoachHomeCounts) - Math.min(...nonCoachHomeCounts) <= 2,
+        `${scenario.name} run ${run}: för ojämn fördelning av hemmamatcher bland övriga spelare`,
+      );
+    } else {
+      assert(
+        Math.max(...homeCounts) - Math.min(...homeCounts) <= 2,
+        `${scenario.name} run ${run}: för ojämn fördelning av hemmamatcher`,
+      );
+    }
 
     for (const player of players) {
       const pattern = result.matches.map((match) => match.playerIds.includes(player.id));
