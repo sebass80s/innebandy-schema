@@ -68,7 +68,7 @@ h1 {
 
 .settings {
   display: grid;
-  grid-template-columns: 180px 180px 1fr;
+  grid-template-columns: repeat(3, minmax(150px, 180px)) 1fr;
   gap: 18px;
   align-items: end;
   padding: 20px;
@@ -364,4 +364,21 @@ input:focus, select:focus {
 
 @media (max-width: 520px) {
   .name-row { grid-template-columns: 26px 1fr 36px; }
+}
+
+.match-number {
+  gap: 4px;
+  align-content: center;
+}
+
+.match-number small {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: .72;
+}
+
+.home-count {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
 }
