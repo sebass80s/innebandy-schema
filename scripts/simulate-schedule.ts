@@ -34,6 +34,12 @@ const scenarios: Scenario[] = [
   { name: "20p-6c", playerCount: 20, coachCount: 6, matchCount: 12, homePattern: [true, false, false, true, true, false, true, false, false, true, false, true], playersPerMatch: 10, runs: 25 },
   { name: "22p-5c", playerCount: 22, coachCount: 5, matchCount: 11, homePattern: [false, true, false, true, false, true, false, true, false, true, false], playersPerMatch: 10, runs: 25 },
   { name: "24p-6c", playerCount: 24, coachCount: 6, matchCount: 12, homePattern: [true, true, false, false, true, false, true, false, true, false, false, true], playersPerMatch: 12, runs: 25 },
+  { name: "all-home", playerCount: 18, coachCount: 4, matchCount: 9, homePattern: [true, true, true, true, true, true, true, true, true], playersPerMatch: 8, runs: 20 },
+  { name: "all-away", playerCount: 18, coachCount: 4, matchCount: 9, homePattern: [false, false, false, false, false, false, false, false, false], playersPerMatch: 8, runs: 20 },
+  { name: "home-cluster-start", playerCount: 18, coachCount: 4, matchCount: 9, homePattern: [true, true, true, true, false, false, false, false, false], playersPerMatch: 8, runs: 20 },
+  { name: "home-cluster-end", playerCount: 18, coachCount: 4, matchCount: 9, homePattern: [false, false, false, false, false, true, true, true, true], playersPerMatch: 8, runs: 20 },
+  { name: "two-coaches", playerCount: 16, coachCount: 2, matchCount: 10, homePattern: [true, false, true, false, true, false, true, false, true, false], playersPerMatch: 9, runs: 20 },
+  { name: "seven-coaches", playerCount: 21, coachCount: 7, matchCount: 10, homePattern: [true, false, false, true, false, true, false, true, false, true], playersPerMatch: 10, runs: 20 },
 ];
 
 let totalRuns = 0;
