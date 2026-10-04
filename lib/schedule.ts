@@ -152,7 +152,7 @@ function buildCoachSchedule(
   let best: string[][] | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
 
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 1200; attempt += 1) {
     const pool = shuffled(targetEntries);
     const schedule: string[][] = [];
     let valid = true;
