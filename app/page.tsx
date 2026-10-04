@@ -93,10 +93,51 @@ export default function Home() {
     setResult(null);
   }
 
+  function addPlayer() {
+    setPlayers((current) => [
+      ...current,
+      {
+        id: `player-${Date.now()}-${current.length + 1}`,
+        name: "",
+      },
+    ]);
+    setResult(null);
+  }
+
+  function removePlayer(id: string) {
+    setPlayers((current) => current.filter((player) => player.id !== id));
+    setCoaches((current) =>
+      current.map((coach) =>
+        coach.childId === id ? { ...coach, childId: "" } : coach,
+      ),
+    );
+    setPlayersPerMatch((current) =>
+      Math.min(current, Math.max(2, players.length - 1)),
+    );
+    setResult(null);
+  }
+
   function updateCoach(id: string, patch: Partial<Coach>) {
     setCoaches((current) =>
       current.map((coach) => (coach.id === id ? { ...coach, ...patch } : coach)),
     );
+    setResult(null);
+  }
+
+  function addCoach() {
+    setCoaches((current) => [
+      ...current,
+      {
+        id: `coach-${Date.now()}-${current.length + 1}`,
+        name: "",
+        childId: "",
+      },
+    ]);
+    setResult(null);
+  }
+
+  function removeCoach(id: string) {
+    setCoaches((current) => current.filter((coach) => coach.id !== id));
     setResult(null);
   }
 
@@ -184,16 +225,30 @@ export default function Home() {
           </div>
           <div className="player-grid">
             {players.map((player, index) => (
-              <label className="name-row" key={player.id}>
+              <div className="name-row" key={player.id}>
                 <span>{index + 1}</span>
                 <input
+                  aria-label={`Spelare ${index + 1}`}
                   value={player.name}
                   placeholder={`Spelare ${index + 1}`}
                   onChange={(event) => updatePlayer(player.id, event.target.value)}
                 />
-              </label>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={`Ta bort ${player.name || `spelare ${index + 1}`}`}
+                  onClick={() => removePlayer(player.id)}
+                  disabled={players.length <= 2}
+                  title={players.length <= 2 ? "Minst två spelare krävs" : "Ta bort spelare"}
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
+          <button type="button" className="add-button" onClick={addPlayer}>
+            + Lägg till spelare
+          </button>
         </section>
 
         <section className="card">
@@ -207,7 +262,19 @@ export default function Home() {
           <div className="coach-list">
             {coaches.map((coach, index) => (
               <div className="coach-row" key={coach.id}>
-                <strong>Tränare {index + 1}</strong>
+                <div className="coach-title">
+                  <strong>Tränare {index + 1}</strong>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Ta bort ${coach.name || `tränare ${index + 1}`}`}
+                    onClick={() => removeCoach(coach.id)}
+                    disabled={coaches.length <= 2}
+                    title={coaches.length <= 2 ? "Minst två tränare krävs" : "Ta bort tränare"}
+                  >
+                    ×
+                  </button>
+                </div>
                 <input
                   value={coach.name}
                   placeholder="Namn"
@@ -237,6 +304,10 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          <button type="button" className="add-button" onClick={addCoach}>
+            + Lägg till tränare
+          </button>
 
           <button className="generate" onClick={handleGenerate}>
             Generera rättvist schema
