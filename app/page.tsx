@@ -40,6 +40,8 @@ type CalendarMatch = {
   start: string;
   summary: string;
   location: string;
+  homeTeam: string;
+  awayTeam: string;
   isHome: boolean | null;
 };
 
@@ -85,6 +87,7 @@ export default function Home() {
   const [rosterData, setRosterData] = useState<RosterData | null>(null);
   const [matchCalendarData, setMatchCalendarData] = useState<MatchCalendarData | null>(null);
   const [selectedRosterTeam, setSelectedRosterTeam] = useState("IIBKP18");
+  const [selectedMatchTeam, setSelectedMatchTeam] = useState("");
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -163,6 +166,25 @@ export default function Home() {
     () => new Set(coaches.map((coach) => coach.childId).filter(Boolean)),
     [coaches],
   );
+
+  const availableMatchTeams = useMemo(() => {
+    const calendarTeam = matchCalendarData?.teams.find(
+      (team) => team.id === selectedRosterTeam,
+    );
+    if (!calendarTeam) return [];
+
+    const variants = new Set<string>();
+    for (const match of calendarTeam.matches) {
+      if (match.homeTeam.toLocaleLowerCase("sv").includes("ingelstad")) {
+        variants.add(match.homeTeam);
+      }
+      if (match.awayTeam.toLocaleLowerCase("sv").includes("ingelstad")) {
+        variants.add(match.awayTeam);
+      }
+    }
+    return [...variants].sort((a, b) => a.localeCompare(b, "sv"));
+  }, [matchCalendarData, selectedRosterTeam]);
+
 
   function updatePlayer(id: string, name: string) {
     setPlayers((current) =>
@@ -248,11 +270,28 @@ export default function Home() {
     const calendarTeam = matchCalendarData?.teams.find(
       (item) => item.id === selectedRosterTeam,
     );
+    const matchTeam =
+      selectedMatchTeam ||
+      (availableMatchTeams.length === 1 ? availableMatchTeams[0] : "");
     const knownMatches =
-      calendarTeam?.matches.filter(
-        (match): match is CalendarMatch & { isHome: boolean } =>
-          typeof match.isHome === "boolean",
-      ) ?? [];
+      calendarTeam?.matches
+        .filter((match) => {
+          if (!matchTeam) return false;
+          return match.homeTeam === matchTeam || match.awayTeam === matchTeam;
+        })
+        .map((match) => ({
+          ...match,
+          isHome:
+            match.homeTeam === matchTeam
+              ? true
+              : match.awayTeam === matchTeam
+                ? false
+                : match.isHome,
+        }))
+        .filter(
+          (match): match is CalendarMatch & { isHome: boolean } =>
+            typeof match.isHome === "boolean",
+        ) ?? [];
 
     setPlayers(importedPlayers);
     setPlayersPerMatch((current) => Math.min(current, importedPlayers.length));
@@ -399,7 +438,10 @@ export default function Home() {
           <div className="roster-import">
             <select
               value={selectedRosterTeam}
-              onChange={(event) => setSelectedRosterTeam(event.target.value)}
+              onChange={(event) => {
+                setSelectedRosterTeam(event.target.value);
+                setSelectedMatchTeam("");
+              }}
               aria-label="Välj lag från Ingelstad IBK"
             >
               {(rosterData?.teams ?? []).map((team) => (
@@ -408,6 +450,19 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            {availableMatchTeams.length > 1 && (
+              <select
+                value={selectedMatchTeam || availableMatchTeams[0]}
+                onChange={(event) => setSelectedMatchTeam(event.target.value)}
+                aria-label="Välj matchlag"
+              >
+                {availableMatchTeams.map((teamName) => (
+                  <option key={teamName} value={teamName}>
+                    {teamName}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               type="button"
               className="secondary"
@@ -417,8 +472,9 @@ export default function Home() {
               Hämta trupp
             </button>
             <small>
-              Hämtar spelare och, när kalendern går att tolka säkert, matchernas
-              hemma/borta-ordning från laget.se. Allt går fortfarande att redigera manuellt.
+              Hämtar spelare och matchordning från laget.se. Har laget flera matchlag,
+              till exempel P18/1 och P18/2, väljer du vilket schema som gäller. Hemma/borta
+              går fortfarande att ändra manuellt.
             </small>
           </div>
 
