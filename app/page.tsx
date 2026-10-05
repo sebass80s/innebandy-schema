@@ -491,69 +491,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="card venue-settings">
-        <div className="section-heading">
-          <div>
-            <span className="step">↕</span>
-            <h2>Hemma / borta i spelordning</h2>
-          </div>
-          <span>{homePattern.filter(Boolean).length} hemmamatcher</span>
-        </div>
-        <div className="venue-grid">
-          {homePattern.map((isHome, index) => {
-            const occasion = visibleMatchOccasions[index];
-            const opponents = occasion
-              ? [...new Set(
-                  occasion.matches.flatMap((match) => {
-                    const homeIsUs = match.homeTeam.toLocaleLowerCase("sv").includes("ingelstad");
-                    const awayIsUs = match.awayTeam.toLocaleLowerCase("sv").includes("ingelstad");
-                    if (homeIsUs && awayIsUs) return [];
-                    return [homeIsUs ? match.awayTeam : match.homeTeam];
-                  }),
-                )]
-              : [];
-            const dateLabel = occasion
-              ? new Intl.DateTimeFormat("sv-SE", {
-                  day: "numeric",
-                  month: "short",
-                }).format(new Date(`${occasion.dateKey}T12:00:00`))
-              : "";
-
-            return (
-            <label className="venue-row" key={index}>
-              <span>
-                <strong>Match {index + 1}</strong>
-                {occasion && (
-                  <span className="venue-meta">
-                    <small className="venue-date">
-                      {dateLabel} · {occasion.matches.length} matcher
-                    </small>
-                    {opponents.length > 0 && (
-                      <small className="venue-opponents">
-                        {opponents.join(", ")}
-                      </small>
-                    )}
-                  </span>
-                )}
-              </span>
-              <select
-                value={isHome ? "home" : "away"}
-                onChange={(event) => {
-                  const next = [...homePattern];
-                  next[index] = event.target.value === "home";
-                  setHomePattern(next);
-                  setResult(null);
-                }}
-              >
-                <option value="home">Hemma</option>
-                <option value="away">Borta</option>
-              </select>
-            </label>
-            );
-          })}
-        </div>
-      </section>
-
       <div className="columns">
         <section className="card">
           <div className="section-heading">
@@ -703,6 +640,69 @@ export default function Home() {
           {error && <p className="error">{error}</p>}
         </section>
       </div>
+
+      <section className="card venue-settings">
+        <div className="section-heading">
+          <div>
+            <span className="step">↕</span>
+            <h2>Hemma / borta i spelordning</h2>
+          </div>
+          <span>{homePattern.filter(Boolean).length} hemmamatcher</span>
+        </div>
+        <div className="venue-grid">
+          {homePattern.map((isHome, index) => {
+            const occasion = visibleMatchOccasions[index];
+            const opponents = occasion
+              ? [...new Set(
+                  occasion.matches.flatMap((match) => {
+                    const homeIsUs = match.homeTeam.toLocaleLowerCase("sv").includes("ingelstad");
+                    const awayIsUs = match.awayTeam.toLocaleLowerCase("sv").includes("ingelstad");
+                    if (homeIsUs && awayIsUs) return [];
+                    return [homeIsUs ? match.awayTeam : match.homeTeam];
+                  }),
+                )]
+              : [];
+            const dateLabel = occasion
+              ? new Intl.DateTimeFormat("sv-SE", {
+                  day: "numeric",
+                  month: "short",
+                }).format(new Date(`${occasion.dateKey}T12:00:00`))
+              : "";
+
+            return (
+            <label className="venue-row" key={index}>
+              <span>
+                <strong>Match {index + 1}</strong>
+                {occasion && (
+                  <span className="venue-meta">
+                    <small className="venue-date">
+                      {dateLabel} · {occasion.matches.length} matcher
+                    </small>
+                    {opponents.length > 0 && (
+                      <small className="venue-opponents">
+                        {opponents.join(", ")}
+                      </small>
+                    )}
+                  </span>
+                )}
+              </span>
+              <select
+                value={isHome ? "home" : "away"}
+                onChange={(event) => {
+                  const next = [...homePattern];
+                  next[index] = event.target.value === "home";
+                  setHomePattern(next);
+                  setResult(null);
+                }}
+              >
+                <option value="home">Hemma</option>
+                <option value="away">Borta</option>
+              </select>
+            </label>
+            );
+          })}
+        </div>
+      </section>
 
       {result && (
         <section className="results">
