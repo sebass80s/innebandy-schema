@@ -185,6 +185,30 @@ export default function Home() {
     return [...variants].sort((a, b) => a.localeCompare(b, "sv"));
   }, [matchCalendarData, selectedRosterTeam]);
 
+  const visibleCalendarMatches = useMemo(() => {
+    const calendarTeam = matchCalendarData?.teams.find(
+      (team) => team.id === selectedRosterTeam,
+    );
+    if (!calendarTeam) return [];
+
+    const matchTeam =
+      selectedMatchTeam ||
+      (availableMatchTeams.length === 1 ? availableMatchTeams[0] : availableMatchTeams[0] ?? "");
+
+    if (!matchTeam) return [];
+
+    return calendarTeam.matches
+      .filter(
+        (match) => match.homeTeam === matchTeam || match.awayTeam === matchTeam,
+      )
+      .sort((a, b) => a.start.localeCompare(b.start));
+  }, [
+    matchCalendarData,
+    selectedRosterTeam,
+    selectedMatchTeam,
+    availableMatchTeams,
+  ]);
+
 
   function updatePlayer(id: string, name: string) {
     setPlayers((current) =>
@@ -406,9 +430,30 @@ export default function Home() {
           <span>{homePattern.filter(Boolean).length} hemmamatcher</span>
         </div>
         <div className="venue-grid">
-          {homePattern.map((isHome, index) => (
+          {homePattern.map((isHome, index) => {
+            const calendarMatch = visibleCalendarMatches[index];
+            const opponent = calendarMatch
+              ? calendarMatch.homeTeam.toLocaleLowerCase("sv").includes("ingelstad")
+                ? calendarMatch.awayTeam
+                : calendarMatch.homeTeam
+              : "";
+            const dateLabel = calendarMatch
+              ? new Intl.DateTimeFormat("sv-SE", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(new Date(calendarMatch.start))
+              : "";
+
+            return (
             <label className="venue-row" key={index}>
-              <span>Match {index + 1}</span>
+              <span>
+                <strong>Match {index + 1}</strong>
+                {calendarMatch && (
+                  <small>{dateLabel} · {opponent}</small>
+                )}
+              </span>
               <select
                 value={isHome ? "home" : "away"}
                 onChange={(event) => {
@@ -422,7 +467,8 @@ export default function Home() {
                 <option value="away">Borta</option>
               </select>
             </label>
-          ))}
+            );
+          })}
         </div>
       </section>
 
