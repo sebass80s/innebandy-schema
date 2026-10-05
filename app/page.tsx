@@ -35,6 +35,26 @@ type RosterData = {
   teams: RosterTeam[];
 };
 
+type CalendarMatch = {
+  uid: string;
+  start: string;
+  summary: string;
+  location: string;
+  isHome: boolean | null;
+};
+
+type CalendarTeam = {
+  id: string;
+  label: string;
+  calendarUrl: string;
+  matches: CalendarMatch[];
+};
+
+type MatchCalendarData = {
+  updatedAt: string;
+  teams: CalendarTeam[];
+};
+
 
 function makePlayers(): Player[] {
   return Array.from({ length: DEFAULT_PLAYER_COUNT }, (_, index) => ({
@@ -63,6 +83,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [rosterData, setRosterData] = useState<RosterData | null>(null);
+  const [matchCalendarData, setMatchCalendarData] = useState<MatchCalendarData | null>(null);
   const [selectedRosterTeam, setSelectedRosterTeam] = useState("IIBKP18");
 
   useEffect(() => {
@@ -105,6 +126,16 @@ export default function Home() {
       })
       .then((data) => setRosterData(data))
       .catch(() => setRosterData(null));
+  }, []);
+
+  useEffect(() => {
+    fetch("matches.json", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Kunde inte läsa matchkalendern");
+        return response.json() as Promise<MatchCalendarData>;
+      })
+      .then((data) => setMatchCalendarData(data))
+      .catch(() => setMatchCalendarData(null));
   }, []);
 
   useEffect(() => {
@@ -214,11 +245,30 @@ export default function Home() {
       name,
     }));
 
+    const calendarTeam = matchCalendarData?.teams.find(
+      (item) => item.id === selectedRosterTeam,
+    );
+    const knownMatches =
+      calendarTeam?.matches.filter(
+        (match): match is CalendarMatch & { isHome: boolean } =>
+          typeof match.isHome === "boolean",
+      ) ?? [];
+
     setPlayers(importedPlayers);
     setPlayersPerMatch((current) => Math.min(current, importedPlayers.length));
     setCoaches((current) => current.map((coach) => ({ ...coach, childId: "" })));
+
+    if (knownMatches.length > 0) {
+      setMatchCount(knownMatches.length);
+      setHomePattern(knownMatches.map((match) => match.isHome));
+    }
+
     setResult(null);
-    setError(`Importerade ${team.players.length} spelare från ${team.label}. Koppla tränarna till sina barn igen.`);
+    setError(
+      knownMatches.length > 0
+        ? `Importerade ${team.players.length} spelare och ${knownMatches.length} matcher från ${team.label}. Hemma/borta kan ändras manuellt nedan.`
+        : `Importerade ${team.players.length} spelare från ${team.label}. Ingen säker matchordning hittades, så hemma/borta lämnas oförändrat.`,
+    );
   }
 
   function handleGenerate() {
@@ -367,7 +417,8 @@ export default function Home() {
               Hämta trupp
             </button>
             <small>
-              Hämtas automatiskt från klubbens publika truppsidor på laget.se.
+              Hämtar spelare och, när kalendern går att tolka säkert, matchernas
+              hemma/borta-ordning från laget.se. Allt går fortfarande att redigera manuellt.
             </small>
           </div>
 
