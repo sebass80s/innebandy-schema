@@ -539,8 +539,8 @@ export default function Home() {
               Hämta trupp
             </button>
             <small>
-              Hämtar spelare och matchordning från laget.se. Har laget flera matchlag,
-              till exempel P18/1 och P18/2, kan du välja ett av dem eller båda tillsammans.
+              Hämtar spelare och matchordning från laget.se. Om laget har flera
+              matchlag kan du välja ett av dem eller samla alla matcher i samma schema.
               Hemma/borta går fortfarande att ändra manuellt.
             </small>
           </div>
