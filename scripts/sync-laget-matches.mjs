@@ -78,29 +78,21 @@ function classifyMatch(event, label) {
   const isMatch = /\bmatch\b/.test(haystack) || /\bvs\b|\bmot\b/.test(haystack);
   if (!isMatch) return null;
 
-  const variants = [
-    normalize(`Ingelstad IBK ${label}`),
-    normalize(label),
-    "ingelstad ibk",
-    "ingelstad",
-  ].filter(Boolean);
-
-  const raw = `${event.summary} ${event.description}`;
+  const summary = event.summary.replace(/^match\s+/i, "").trim();
   const separators = /\s(?:-|–|—|vs\.?|mot)\s/i;
-  const parts = raw.split(separators).map((part) => normalize(part)).filter(Boolean);
+  const sides = summary.split(separators).map((part) => part.trim()).filter(Boolean);
+  const homeTeam = sides[0] ?? "";
+  const awayTeam = sides.length >= 2 ? sides.slice(1).join(" - ") : "";
+  const homeIsIngelstad = normalize(homeTeam).includes("ingelstad");
+  const awayIsIngelstad = normalize(awayTeam).includes("ingelstad");
 
   let isHome = null;
-  if (parts.length >= 2) {
-    const left = parts[0];
-    const right = parts.slice(1).join(" ");
-    const leftIsUs = variants.some((variant) => left.includes(variant));
-    const rightIsUs = variants.some((variant) => right.includes(variant));
-    if (leftIsUs !== rightIsUs) isHome = leftIsUs;
-  }
-
-  if (isHome === null) {
-    if (/\bhemma(match)?\b/.test(haystack)) isHome = true;
-    else if (/\bborta(match)?\b/.test(haystack)) isHome = false;
+  if (homeIsIngelstad !== awayIsIngelstad) {
+    isHome = homeIsIngelstad;
+  } else if (/\bhemma(match)?\b/.test(haystack)) {
+    isHome = true;
+  } else if (/\bborta(match)?\b/.test(haystack)) {
+    isHome = false;
   }
 
   return {
@@ -108,6 +100,8 @@ function classifyMatch(event, label) {
     start: event.start,
     summary: event.summary,
     location: event.location,
+    homeTeam,
+    awayTeam,
     isHome,
   };
 }
