@@ -58,6 +58,12 @@ type MatchCalendarData = {
   teams: CalendarTeam[];
 };
 
+type MatchOccasion = {
+  dateKey: string;
+  matches: CalendarMatch[];
+  isHome: boolean | null;
+};
+
 
 function makePlayers(): Player[] {
   return Array.from({ length: DEFAULT_PLAYER_COUNT }, (_, index) => ({
@@ -217,6 +223,33 @@ export default function Home() {
     availableMatchTeams,
   ]);
 
+  const visibleMatchOccasions = useMemo<MatchOccasion[]>(() => {
+    const grouped = new Map<string, CalendarMatch[]>();
+
+    for (const match of visibleCalendarMatches) {
+      const dateKey = match.start.slice(0, 10);
+      const current = grouped.get(dateKey) ?? [];
+      current.push(match);
+      grouped.set(dateKey, current);
+    }
+
+    return [...grouped.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, matches]) => {
+        const homeValues = new Set(
+          matches
+            .map((match) => match.isHome)
+            .filter((value): value is boolean => typeof value === "boolean"),
+        );
+
+        return {
+          dateKey,
+          matches,
+          isHome: homeValues.size === 1 ? [...homeValues][0] : null,
+        };
+      });
+  }, [visibleCalendarMatches]);
+
 
   function updatePlayer(id: string, name: string) {
     setPlayers((current) =>
@@ -305,7 +338,7 @@ export default function Home() {
     const matchTeam =
       selectedMatchTeam ||
       (availableMatchTeams.length === 1 ? availableMatchTeams[0] : "");
-    const knownMatches =
+    const selectedMatches =
       calendarTeam?.matches
         .filter((match) => {
           if (!matchTeam) return false;
@@ -327,25 +360,46 @@ export default function Home() {
                 : match.awayTeam === matchTeam
                   ? false
                   : match.isHome,
-        }))
-        .filter(
-          (match): match is CalendarMatch & { isHome: boolean } =>
-            typeof match.isHome === "boolean",
-        ) ?? [];
+        })) ?? [];
+
+    const groupedMatches = new Map<string, CalendarMatch[]>();
+    for (const match of selectedMatches) {
+      const dateKey = match.start.slice(0, 10);
+      const current = groupedMatches.get(dateKey) ?? [];
+      current.push(match);
+      groupedMatches.set(dateKey, current);
+    }
+
+    const knownOccasions = [...groupedMatches.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, matches]) => {
+        const homeValues = new Set(
+          matches
+            .map((match) => match.isHome)
+            .filter((value): value is boolean => typeof value === "boolean"),
+        );
+        return {
+          dateKey,
+          matches,
+          isHome: homeValues.size === 1 ? [...homeValues][0] : null,
+        };
+      });
 
     setPlayers(importedPlayers);
     setPlayersPerMatch((current) => Math.min(current, importedPlayers.length));
     setCoaches((current) => current.map((coach) => ({ ...coach, childId: "" })));
 
-    if (knownMatches.length > 0) {
-      setMatchCount(knownMatches.length);
-      setHomePattern(knownMatches.map((match) => match.isHome));
+    if (knownOccasions.length > 0) {
+      setMatchCount(knownOccasions.length);
+      setHomePattern((current) =>
+        knownOccasions.map((occasion, index) => occasion.isHome ?? current[index] ?? false),
+      );
     }
 
     setResult(null);
     setError(
-      knownMatches.length > 0
-        ? `Importerade ${team.players.length} spelare och ${knownMatches.length} matcher från ${team.label}. Hemma/borta kan ändras manuellt nedan.`
+      knownOccasions.length > 0
+        ? `Importerade ${team.players.length} spelare och ${knownOccasions.length} speldatum från ${team.label}. Hemma/borta kan ändras manuellt nedan.`
         : `Importerade ${team.players.length} spelare från ${team.label}. Ingen säker matchordning hittades, så hemma/borta lämnas oförändrat.`,
     );
   }
@@ -447,27 +501,33 @@ export default function Home() {
         </div>
         <div className="venue-grid">
           {homePattern.map((isHome, index) => {
-            const calendarMatch = visibleCalendarMatches[index];
-            const opponent = calendarMatch
-              ? calendarMatch.homeTeam.toLocaleLowerCase("sv").includes("ingelstad")
-                ? calendarMatch.awayTeam
-                : calendarMatch.homeTeam
-              : "";
-            const dateLabel = calendarMatch
+            const occasion = visibleMatchOccasions[index];
+            const opponents = occasion
+              ? [...new Set(
+                  occasion.matches.flatMap((match) => {
+                    const homeIsUs = match.homeTeam.toLocaleLowerCase("sv").includes("ingelstad");
+                    const awayIsUs = match.awayTeam.toLocaleLowerCase("sv").includes("ingelstad");
+                    if (homeIsUs && awayIsUs) return [];
+                    return [homeIsUs ? match.awayTeam : match.homeTeam];
+                  }),
+                )]
+              : [];
+            const dateLabel = occasion
               ? new Intl.DateTimeFormat("sv-SE", {
                   day: "numeric",
                   month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }).format(new Date(calendarMatch.start))
+                }).format(new Date(`${occasion.dateKey}T12:00:00`))
               : "";
 
             return (
             <label className="venue-row" key={index}>
               <span>
                 <strong>Match {index + 1}</strong>
-                {calendarMatch && (
-                  <small>{dateLabel} · {opponent}</small>
+                {occasion && (
+                  <small>
+                    {dateLabel} · {occasion.matches.length} matcher
+                    {opponents.length > 0 ? ` · ${opponents.join(", ")}` : ""}
+                  </small>
                 )}
               </span>
               <select
