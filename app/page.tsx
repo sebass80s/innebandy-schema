@@ -524,10 +524,16 @@ export default function Home() {
               <span>
                 <strong>Match {index + 1}</strong>
                 {occasion && (
-                  <small>
-                    {dateLabel} · {occasion.matches.length} matcher
-                    {opponents.length > 0 ? ` · ${opponents.join(", ")}` : ""}
-                  </small>
+                  <span className="venue-meta">
+                    <small className="venue-date">
+                      {dateLabel} · {occasion.matches.length} matcher
+                    </small>
+                    {opponents.length > 0 && (
+                      <small className="venue-opponents">
+                        {opponents.join(", ")}
+                      </small>
+                    )}
+                  </span>
                 )}
               </span>
               <select
