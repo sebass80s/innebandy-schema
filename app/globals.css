@@ -915,3 +915,35 @@ input:focus, select:focus {
     color: var(--green-dark);
   }
 }
+
+
+.roster-import {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+  margin-bottom: 14px;
+}
+
+.roster-import .bookmarklet,
+.roster-import .secondary {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  text-align: center;
+}
+
+.roster-import small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .roster-import {
+    grid-template-columns: 1fr;
+  }
+
+  .roster-import small {
+    grid-column: auto;
+  }
+}
