@@ -353,8 +353,8 @@ export default function Home() {
               aria-label="Välj lag från Ingelstad IBK"
             >
               {(rosterData?.teams ?? []).map((team) => (
-                <option key={team.id} value={team.id} disabled={team.players.length === 0}>
-                  {team.label}{team.players.length ? ` · ${team.players.length} spelare` : " · ej tillgänglig"}
+                <option key={team.id} value={team.id} disabled={team.players.length < 2}>
+                  {team.label}{team.players.length >= 2 ? ` · ${team.players.length} spelare` : " · ej tillgänglig"}
                 </option>
               ))}
             </select>
