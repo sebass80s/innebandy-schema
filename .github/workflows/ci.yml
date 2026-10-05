@@ -37,6 +37,9 @@ jobs:
       - name: Sync public Laget.se rosters
         run: node scripts/sync-laget-rosters.mjs
 
+      - name: Sync Laget.se match calendars
+        run: node scripts/sync-laget-matches.mjs
+
       - name: Simulate schedules
         run: npm test
 
